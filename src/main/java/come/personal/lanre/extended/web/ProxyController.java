@@ -4,14 +4,12 @@ import java.util.Enumeration;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -40,14 +38,25 @@ public class ProxyController {
 
         HttpEntity<String> requestEntity = new HttpEntity<>(httpEntity.getBody(), headers);
 
-        ResponseEntity<String> responseEntity = restTemplate.exchange(targetUrl, method, requestEntity, String.class);
-
         // Logging request details
         logRequestDetails(request, url, headers, httpEntity.getBody());
 
-        // Logging response details
-        logResponseDetails(responseEntity.getHeaders(), responseEntity.getBody());
-
+        ResponseEntity<String> responseEntity = null;
+        try {
+            responseEntity = restTemplate.exchange(targetUrl, method, requestEntity, String.class);
+            // Logging response details
+            logResponseDetails(responseEntity.getHeaders(), responseEntity.getBody());
+        } catch (HttpClientErrorException ex) {
+            logger.error(ex.toString(), ex);
+            // Extract information from the exception
+            HttpStatus statusCode = ex.getStatusCode();
+            String responseBody = ex.getResponseBodyAsString();
+            logResponseDetails(ex.getResponseHeaders(), responseBody);
+            // Create a new ResponseEntity using the extracted information
+            responseEntity = new ResponseEntity<>(responseBody, statusCode);
+            // Now you can use the responseEntity object as needed
+            // For example, you can return it from a method or handle it further
+        }
         return responseEntity;
     }
 
