@@ -47,7 +47,7 @@ public class ProxyController {
             // Logging response details
             logResponseDetails(responseEntity.getHeaders(), responseEntity.getBody());
         } catch (HttpClientErrorException ex) {
-            logger.error(ex.toString(), ex);
+            /*logger.error(ex.toString(), ex);
             // Extract information from the exception
             HttpStatus statusCode = ex.getStatusCode();
             String responseBody = ex.getResponseBodyAsString();
@@ -56,6 +56,19 @@ public class ProxyController {
             responseEntity = new ResponseEntity<>(responseBody, statusCode);
             // Now you can use the responseEntity object as needed
             // For example, you can return it from a method or handle it further
+             */
+
+            logger.error("HTTP Error: {}", ex.getStatusCode(), ex);
+            // Extract information from the exception
+            HttpStatus statusCode = ex.getStatusCode();
+            HttpHeaders responseHeaders = ex.getResponseHeaders();
+            String responseBody = ex.getResponseBodyAsString();
+            if (responseBody == null || responseBody.isEmpty()) {
+                responseBody = "No response body available";
+            }
+            logResponseDetails(responseHeaders, responseBody);
+            // Create a new ResponseEntity using the extracted information
+            responseEntity = new ResponseEntity<>(responseBody, responseHeaders, statusCode);
         }
         return responseEntity;
     }
