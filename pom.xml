@@ -67,8 +67,9 @@
         <git-commit-id-plugin.version>5.0.0</git-commit-id-plugin.version>
         <modernizer-maven-plugin.version>2.4.0</modernizer-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
-        <jib-maven-plugin.version>3.2.1</jib-maven-plugin.version>
-        <jib-maven-plugin.image>eclipse-temurin:11-jre-focal</jib-maven-plugin.image>
+        <jib-maven-plugin.version.old>3.2.1</jib-maven-plugin.version.old>
+        <jib-maven-plugin.version>3.4.0</jib-maven-plugin.version>
+        <jib-maven-plugin.image>eclipse-temurin:11-jdk-focal</jib-maven-plugin.image>
         <jib-maven-plugin.architecture>amd64</jib-maven-plugin.architecture>
         <lifecycle-mapping.version>1.0.0</lifecycle-mapping.version>
         <openapi-generator-maven-plugin.version>6.0.1</openapi-generator-maven-plugin.version>
@@ -242,6 +243,89 @@
             <artifactId>metrics-core</artifactId>
         </dependency>
         <!-- jhipster-needle-maven-add-dependency -->
+        <!--
+        <dependency>
+            <groupId>com.didisoft</groupId>
+            <artifactId>pgplib</artifactId>
+            <version>2.5.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpg-jdk14</artifactId>
+            <version>145.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk14</artifactId>
+            <version>145.9</version>
+        </dependency>
+        <dependency>
+            <groupId>nfp.ssm.core.SSMLib</groupId>
+            <artifactId>SSecurityModule</artifactId>
+            <version>1.0.9</version>
+        </dependency>
+        -->
+        <!--<dependency>
+            <groupId>com.didisoft</groupId>
+            <artifactId>pgplib</artifactId>
+            <version>3.2.1</version>
+        </dependency>-->
+
+        <!-- BouncyCastle Dependencies -->
+      <!--
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.68</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpg-jdk15on</artifactId>
+            <version>1.68</version>
+        </dependency>
+        -->
+
+        <!-- BouncyCastle dependencies -->
+        <!--
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.68</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpg-jdk15on</artifactId>
+            <version>1.68</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.didisoft</groupId>
+            <artifactId>pgplib</artifactId>
+            <version>2.5.9</version>
+        </dependency>
+        -->
+
+        <!-- DigiSoft PGP Library -->
+        <dependency>
+            <groupId>com.didisoft</groupId>
+            <artifactId>pgplib</artifactId>
+            <version>2.5.9</version>
+        </dependency>
+
+        <!-- BouncyCastle Dependencies - Using older version for compatibility -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.46</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpg-jdk15on</artifactId>
+            <version>1.46</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>
