@@ -1,174 +1,212 @@
 package come.personal.lanre.extended.cryptography;
 
-import static come.personal.lanre.extended.cryptography.AppUtils.hex2byte;
-
-import com.didisoft.pgp.KeyStore;
 import com.didisoft.pgp.KeyStore;
 import com.didisoft.pgp.PGPLib;
-import com.didisoft.pgp.PGPLib;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.StringTokenizer;
-import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPException;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RemitaSmartCashCryptoUtil {
 
-    /* private String smartcashPublicKey="/Users/olanrewajuogunseye/Downloads/PGPKeystoreGeneratorTwo/smartcashpsb_public_key_sit.key";
-     private String remitaPublicKey="/Users/olanrewajuogunseye/Downloads/PGPKeystoreGeneratorTwo/remitapublickey20241006.key";
-     private String remitaKeyStore="/Users/olanrewajuogunseye/Downloads/PGPKeystoreGeneratorTwo/pgp20241006.keystore";  */
     private static final String SMARTCASH_PUBLIC_KEY = "/keys/smartcashpsb_public_key_sit.key";
     private static final String REMITA_PUBLIC_KEY = "/keys/remitapublickey20241006.key";
     private static final String REMITA_KEYSTORE = "/keys/pgp20241006.keystore";
-    private String remitaKeyStorePassword = "changeit";
+    private static final String KEYSTORE_PASSWORD = "changeit";
 
-    public String encryptRequestToSmartCash(String resquest) {
-        try {
-            return encryptMessage(resquest, SMARTCASH_PUBLIC_KEY);
-        } catch (PGPException | IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+    private static final String USER_ID = "rpsl@systemspecs.com.ng"; //
+
+    private final PGPLib pgp;
+    private KeyStore keyStore;
+
+    public RemitaSmartCashCryptoUtil() {
+        this.pgp = new PGPLib();
+        initializeKeyStore();
     }
 
-    public String encryptRequestToRemita(String resquest) {
+    private void initializeKeyStore() {
         try {
-            return encryptMessage(resquest, REMITA_PUBLIC_KEY);
-        } catch (PGPException | IOException e) {
+            File keyStoreFile = getResourceAsFile(REMITA_KEYSTORE);
+            this.keyStore = new KeyStore(keyStoreFile.getAbsolutePath(), KEYSTORE_PASSWORD);
+
+            // Verify the keystore contains the necessary keys
+            if (!keyStore.containsKey(USER_ID)) {
+                throw new IllegalStateException("Keystore does not contain key for user: " + USER_ID);
+            }
+            System.out.println("Keystore initialized successfully with user: " + USER_ID);
+        } catch (Exception e) {
+            System.err.println("Error initializing keystore: " + e.getMessage());
             e.printStackTrace();
         }
-        return null;
+    }
+
+    /*public String encryptRequestToSmartCash(String request) {
+        try {
+            return encryptMessage(request, SMARTCASH_PUBLIC_KEY);
+        } catch (Exception e) {
+            System.err.println("Error encrypting request to SmartCash: " + e.getMessage());
+            return null;
+        }
+    }*/
+
+    public String encryptRequestToSmartCash(String request) {
+        try {
+            File publicKeyFile = getResourceAsFile(SMARTCASH_PUBLIC_KEY);
+            return encryptMessage(request, publicKeyFile.getAbsolutePath());
+        } catch (Exception e) {
+            System.err.println("Error encrypting request to SmartCash: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String encryptRequestToRemita(String request) {
+        try {
+            File publicKeyFile = getResourceAsFile(REMITA_PUBLIC_KEY);
+            return encryptMessage(request, publicKeyFile.getAbsolutePath());
+        } catch (Exception e) {
+            System.err.println("Error encrypting request to Remita: " + e.getMessage());
+            return null;
+        }
     }
 
     public String decryptResponseFromSmartCash(String response) {
         try {
-            return decryptFile(response, REMITA_KEYSTORE, remitaKeyStorePassword);
-        } catch (PGPException | IOException e) {
+            if (response == null || response.trim().isEmpty()) {
+                throw new IllegalArgumentException("Response cannot be null or empty");
+            }
+            return decryptFile(response);
+        } catch (Exception e) {
+            System.err.println("Error decrypting response from SmartCash: " + e.getMessage());
             e.printStackTrace();
-        }
-        return null;
-    }
-
-    public String encryptMessage(String text, String path) throws PGPException, IOException {
-        try {
-            String encryptedMessage = "";
-            int start = 0;
-            int len = 2048;
-            int end = len;
-            int intDiv = text.length() / len;
-            int divRemainder = text.length() % len;
-            String tempEncryptedData;
-            for (int i = 0; i < intDiv; ++i) {
-                tempEncryptedData = text.substring(start, end);
-                tempEncryptedData = this.encryptMessage_1(tempEncryptedData, path);
-                if (tempEncryptedData.equals("***Error***")) {
-                    encryptedMessage = "";
-                    break;
-                }
-                encryptedMessage = encryptedMessage + tempEncryptedData;
-                encryptedMessage = encryptedMessage + ";";
-                start = end;
-                end += len;
-            }
-            if (divRemainder != 0) {
-                end = start + divRemainder;
-                String newText = text.substring(start, end);
-                tempEncryptedData = this.encryptMessage_1(newText, path);
-                if (tempEncryptedData.equals("***Error***")) {
-                    encryptedMessage = "";
-                } else {
-                    encryptedMessage = encryptedMessage + tempEncryptedData;
-                    encryptedMessage = encryptedMessage + ";";
-                }
-            }
-            return encryptedMessage;
-        } catch (Exception e) {
-            throw e;
+            return null;
         }
     }
 
-    private String encryptMessage_1(String text, String path) throws PGPException, IOException {
-        String encryptedMessage = "***Error***";
-        try {
-            PGPLib pgp = new PGPLib();
-            boolean armor = false;
-            boolean withIntegrityCheck = false;
+    private String encryptMessage(String text, String publicKeyPath) throws Exception {
+        if (text == null || text.trim().isEmpty()) {
+            throw new IllegalArgumentException("Text cannot be null or empty");
+        }
+
+        StringBuilder encryptedMessage = new StringBuilder();
+        int chunkSize = 2048;
+
+        for (int i = 0; i < text.length(); i += chunkSize) {
+            int end = Math.min(i + chunkSize, text.length());
+            String chunk = text.substring(i, end);
+            String encryptedChunk = encryptChunk(chunk, publicKeyPath);
+
+            if (encryptedChunk == null || encryptedChunk.equals("***Error***")) {
+                throw new Exception("Error encrypting chunk");
+            }
+
+            encryptedMessage.append(encryptedChunk).append(";");
+        }
+
+        return encryptedMessage.toString();
+    }
+
+    private String encryptChunkOld(String chunk, String publicKeyPath) throws Exception {
+        try (
+            InputStream publicKeyStream = getClass().getResourceAsStream(publicKeyPath);
+            ByteArrayInputStream textStream = new ByteArrayInputStream(chunk.getBytes(StandardCharsets.UTF_8));
             PipedInputStream pin = new PipedInputStream();
-            OutputStream o = new PipedOutputStream(pin);
-            InputStream iStream = new ByteArrayInputStream(text.getBytes("UTF-8"));
-            //InputStream publicKeyStream = new FileInputStream(path);
-            try (InputStream publicKeyStream = getResourceAsStream(path)) {
-                pgp.encryptStream(iStream, path, publicKeyStream, o, armor, withIntegrityCheck);
-                while (pin.available() <= 0) {}
-                byte[] body = new byte[pin.available()];
-                pin.read(body);
-                encryptedMessage = AppUtils.byte2hex(body);
-            } catch (Exception e) {
-                e.printStackTrace();
+            PipedOutputStream pout = new PipedOutputStream(pin)
+        ) {
+            if (publicKeyStream == null) {
+                throw new FileNotFoundException("Public key file not found: " + publicKeyPath);
             }
-        } catch (Exception var11) {
-            var11.printStackTrace();
-        }
-        return encryptedMessage;
-    }
 
-    public String decryptFile(String text, String path, String password) throws PGPException, IOException {
-        try {
-            String decryptedMessage = "";
-            for (
-                StringTokenizer sToken = new StringTokenizer(text, ";");
-                sToken.hasMoreTokens();
-                decryptedMessage = decryptedMessage + this.decryptFile_1(sToken.nextToken(), path, password)
-            ) {}
-            return decryptedMessage;
-        } catch (Exception e) {
-            throw e;
+            // Encrypt the chunk
+            pgp.encryptStream(textStream, publicKeyPath, publicKeyStream, pout, false, false);
+
+            // Read the encrypted data
+            byte[] encryptedData = new byte[pin.available()];
+            pin.read(encryptedData);
+            return AppUtils.byte2hex(encryptedData);
         }
     }
 
-    private String decryptFile_1(String text, String path, String password) throws PGPException, IOException {
-        String decryptedMessage = "";
-        byte[] bytText = hex2byte(text);
-        File keyStoreFile = getResourceAsFile(path);
-        KeyStore keyStore = new KeyStore(path, "changeit");
-        try {
-            PGPLib pgp = new PGPLib();
-            InputStream iStream = new ByteArrayInputStream(bytText);
+    private String encryptChunk(String chunk, String publicKeyPath) throws Exception {
+        try (
+            FileInputStream publicKeyStream = new FileInputStream(publicKeyPath);
+            ByteArrayInputStream textStream = new ByteArrayInputStream(chunk.getBytes(StandardCharsets.UTF_8));
             PipedInputStream pin = new PipedInputStream();
-            OutputStream oStream = new PipedOutputStream(pin);
-            pgp.decryptStream(iStream, keyStore, password, oStream);
-            while (pin.available() <= 0) {}
-            byte[] body = new byte[pin.available()];
-            pin.read(body);
-            decryptedMessage = (new String(body)).toString();
-        } catch (Exception var11) {
-            var11.printStackTrace();
+            PipedOutputStream pout = new PipedOutputStream(pin)
+        ) {
+            pgp.encryptStream(textStream, USER_ID, publicKeyStream, pout, false, false);
+
+            // Read the encrypted data
+            byte[] encryptedData = new byte[pin.available()];
+            pin.read(encryptedData);
+            return AppUtils.byte2hex(encryptedData);
         }
-        return decryptedMessage;
     }
 
-    // Method to get InputStream for a resource
-    private InputStream getResourceAsStream(String resourcePath) {
-        return getClass().getResourceAsStream(resourcePath);
+    private String decryptFile(String text) throws Exception {
+        if (keyStore == null) {
+            throw new IllegalStateException("KeyStore not initialized");
+        }
+
+        StringBuilder decryptedMessage = new StringBuilder();
+        StringTokenizer tokenizer = new StringTokenizer(text, ";");
+
+        while (tokenizer.hasMoreTokens()) {
+            String token = tokenizer.nextToken();
+            String decryptedChunk = decryptChunk(token);
+            decryptedMessage.append(decryptedChunk);
+        }
+
+        return decryptedMessage.toString();
     }
 
-    // Method to get a temporary file for a resource
-    private File getResourceAsFile(String resourcePath) throws IOException {
-        InputStream in = getResourceAsStream(resourcePath);
+    private String decryptChunkOld(String encryptedHex) throws Exception {
+        byte[] encryptedData = AppUtils.hex2byte(encryptedHex);
+
+        try (
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(encryptedData);
+            PipedInputStream pin = new PipedInputStream();
+            PipedOutputStream pout = new PipedOutputStream(pin)
+        ) {
+            pgp.decryptStream(inputStream, keyStore, KEYSTORE_PASSWORD, pout);
+            pout.close(); // Ensure all data is written
+
+            byte[] decryptedData = new byte[pin.available()];
+            pin.read(decryptedData);
+            return new String(decryptedData, StandardCharsets.UTF_8);
+        }
+    }
+
+    private String decryptChunk(String encryptedHex) throws Exception {
+        byte[] encryptedData = AppUtils.hex2byte(encryptedHex);
+
+        try (
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(encryptedData);
+            PipedInputStream pin = new PipedInputStream();
+            PipedOutputStream pout = new PipedOutputStream(pin)
+        ) {
+            // Print debug information
+            System.out.println("Attempting to decrypt with keystore password: " + KEYSTORE_PASSWORD);
+            System.out.println("Available keys in keystore: " + keyStore.getKeys());
+
+            pgp.decryptStream(inputStream, keyStore, KEYSTORE_PASSWORD, pout);
+            pout.close();
+
+            byte[] decryptedData = new byte[pin.available()];
+            pin.read(decryptedData);
+            return new String(decryptedData, StandardCharsets.UTF_8);
+        }
+    }
+
+    public File getResourceAsFile(String resourcePath) throws IOException {
+        InputStream in = getClass().getResourceAsStream(resourcePath);
         if (in == null) {
-            throw new IOException("Resource not found: " + resourcePath);
+            throw new FileNotFoundException("Resource not found: " + resourcePath);
         }
 
-        File tempFile = File.createTempFile(String.valueOf(in.hashCode()), ".tmp");
+        File tempFile = File.createTempFile("pgp_", ".tmp");
         tempFile.deleteOnExit();
 
         try (FileOutputStream out = new FileOutputStream(tempFile)) {
@@ -178,6 +216,38 @@ public class RemitaSmartCashCryptoUtil {
                 out.write(buffer, 0, bytesRead);
             }
         }
+
         return tempFile;
+    }
+
+    public static void main(String[] args) {
+        RemitaSmartCashCryptoUtil cryptoUtil = new RemitaSmartCashCryptoUtil();
+
+        try {
+            // Test encryption and decryption
+            String originalText = "Test message";
+            System.out.println("Original text: " + originalText);
+
+            // Encrypt
+            String encrypted = cryptoUtil.encryptRequestToSmartCash(originalText);
+            System.out.println("Encrypted: " + encrypted);
+
+            encrypted = cryptoUtil.encryptRequestToRemita(originalText);
+            System.out.println("Encrypted to Remita: " + encrypted);
+
+            // Decrypt
+            String decrypted = cryptoUtil.decryptResponseFromSmartCash(encrypted);
+            System.out.println("Decrypted: " + decrypted);
+
+            // Verify
+            if (originalText.equals(decrypted)) {
+                System.out.println("Success: Encryption/Decryption cycle completed successfully!");
+            } else {
+                System.out.println("Error: Decrypted text doesn't match original!");
+            }
+        } catch (Exception e) {
+            System.err.println("Error during test: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

@@ -1,5 +1,8 @@
 #!/bin/bash
-sdk use java 17.0.4-amzn
+
+set -e  # This line exits the script immediately if any command exits with a non-zero exit code
+
+##sdk use java 17.0.4-amzn
 ./mvnw clean install -DskipTests
 #./mvnw clean install sonar:sonar -U -X -DskipTests
 ./mvnw -Pprod verify jib:dockerBuild -DskipTests
