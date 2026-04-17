@@ -78,7 +78,10 @@ public class ExceptionTranslator implements ProblemHandling, SecurityAdviceTrait
                 .with(VIOLATIONS_KEY, ((ConstraintViolationProblem) problem).getViolations())
                 .with(MESSAGE_KEY, ErrorConstants.ERR_VALIDATION);
         } else {
-            builder.withCause(((DefaultProblem) problem).getCause()).withDetail(problem.getDetail()).withInstance(problem.getInstance());
+            builder.withDetail(problem.getDetail()).withInstance(problem.getInstance());
+            if (isCausalChainsEnabled()) {
+                builder.withCause(((DefaultProblem) problem).getCause());
+            }
             problem.getParameters().forEach(builder::with);
             if (!problem.getParameters().containsKey(MESSAGE_KEY) && problem.getStatus() != null) {
                 builder.with(MESSAGE_KEY, "error.http." + problem.getStatus().getStatusCode());
@@ -160,6 +163,11 @@ public class ExceptionTranslator implements ProblemHandling, SecurityAdviceTrait
             .withCause(
                 Optional.ofNullable(throwable.getCause()).filter(cause -> isCausalChainsEnabled()).map(this::toProblem).orElse(null)
             );
+    }
+
+    @Override
+    public boolean isCausalChainsEnabled() {
+        return false;
     }
 
     private boolean containsPackageName(String message) {

@@ -29,7 +29,7 @@ public class JacksonConfiguration {
      */
     @Bean
     public ProblemModule problemModule() {
-        return new ProblemModule();
+        return new ProblemModule().withStackTraces(false);
     }
 
     /*

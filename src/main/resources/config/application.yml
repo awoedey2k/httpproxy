@@ -180,4 +180,7 @@ jhipster:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 
-# application:
+application:
+  http-timeout:
+    connect: 60000
+    read: 300000

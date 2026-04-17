@@ -1,5 +1,6 @@
 package come.personal.lanre.extended.config;
 
+import come.personal.lanre.config.ApplicationProperties;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -23,6 +24,12 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableWebMvc
 public class HttpProxyApplication {
 
+    private final ApplicationProperties applicationProperties;
+
+    public HttpProxyApplication(ApplicationProperties applicationProperties) {
+        this.applicationProperties = applicationProperties;
+    }
+
     @Bean
     public FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
         FilterRegistrationBean<ForwardedHeaderFilter> filterRegBean = new FilterRegistrationBean<>();
@@ -44,6 +51,8 @@ public class HttpProxyApplication {
         HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
 
         requestFactory.setHttpClient(httpClient);
+        requestFactory.setConnectTimeout(applicationProperties.getHttpTimeout().getConnect());
+        requestFactory.setReadTimeout(applicationProperties.getHttpTimeout().getRead());
 
         return new RestTemplate(requestFactory);
     }

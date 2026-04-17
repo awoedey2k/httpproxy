@@ -10,7 +10,32 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "application", ignoreUnknownFields = false)
 public class ApplicationProperties {
-    // jhipster-needle-application-properties-property
-    // jhipster-needle-application-properties-property-getter
-    // jhipster-needle-application-properties-property-class
+
+    private final HttpTimeout httpTimeout = new HttpTimeout();
+
+    public HttpTimeout getHttpTimeout() {
+        return httpTimeout;
+    }
+
+    public static class HttpTimeout {
+
+        private int connect = 60000;
+        private int read = 60000;
+
+        public int getConnect() {
+            return connect;
+        }
+
+        public void setConnect(int connect) {
+            this.connect = connect;
+        }
+
+        public int getRead() {
+            return read;
+        }
+
+        public void setRead(int read) {
+            this.read = read;
+        }
+    }
 }

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -46,18 +46,7 @@ public class ProxyController {
             responseEntity = restTemplate.exchange(targetUrl, method, requestEntity, String.class);
             // Logging response details
             logResponseDetails(responseEntity.getHeaders(), responseEntity.getBody());
-        } catch (HttpClientErrorException ex) {
-            /*logger.error(ex.toString(), ex);
-            // Extract information from the exception
-            HttpStatus statusCode = ex.getStatusCode();
-            String responseBody = ex.getResponseBodyAsString();
-            logResponseDetails(ex.getResponseHeaders(), responseBody);
-            // Create a new ResponseEntity using the extracted information
-            responseEntity = new ResponseEntity<>(responseBody, statusCode);
-            // Now you can use the responseEntity object as needed
-            // For example, you can return it from a method or handle it further
-             */
-
+        } catch (HttpStatusCodeException ex) {
             logger.error("HTTP Error: {}", ex.getStatusCode(), ex);
             // Extract information from the exception
             HttpStatus statusCode = ex.getStatusCode();
